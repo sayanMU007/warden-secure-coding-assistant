@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Warden — Secure Coding Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1115; --surface:#161A21; --surface-2:#1E232B; --surface-3:#262C36;
+    --border:#2B323C; --ink:#E9E7DF; --ink-dim:#9AA1AC; --ink-faint:#666E7A;
+    --accent:#E8A33D; --accent-dim:#4A3C22; --danger:#E0655F; --danger-dim:#3A2222;
+    --warn:#E8C33D; --warn-dim:#3A3620; --ok:#6FBF8B; --ok-dim:#213A2B;
+    --add-bg:#1D3324; --add-fg:#8FD6A8; --del-bg:#3B2222; --del-fg:#E39A96;
+    --radius:10px;
+    --serif:'Fraunces', Georgia, serif; --sans:'IBM Plex Sans', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--accent-dim);color:var(--accent);}
+  a{color:var(--accent);}
+  .app{display:flex;flex-direction:column;min-height:100vh;}
+  header.top{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;gap:12px;}
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .mark{font-family:var(--serif);font-weight:600;font-size:22px;color:var(--ink);letter-spacing:0.2px;}
+  .brand .mark em{font-style:italic;color:var(--accent);}
+  .top-actions{display:flex;gap:10px;align-items:center;}
+  button{font-family:var(--sans);cursor:pointer;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:9px 15px;font-size:13.5px;font-weight:500;transition:background .12s ease, border-color .12s ease;}
+  button:hover:not(:disabled){background:var(--surface-3);border-color:#3A424E;}
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#221803;font-weight:600;}
+  button.primary:hover:not(:disabled){background:#f0ac48;}
+  button.ghost{background:transparent;}
+  button.small{padding:6px 10px;font-size:12.5px;}
+  main.layout{display:flex;flex:1;min-height:0;}
+  aside.rail{width:300px;flex:0 0 300px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;min-height:0;}
+  .rail-head{padding:16px 18px 10px;}
+  .rail-head h2{font-family:var(--serif);font-weight:600;font-size:15px;margin:0 0 4px;}
+  .rail-head p{margin:0;font-size:12px;color:var(--ink-dim);line-height:1.5;}
+  .dropzone{margin:12px 16px;padding:18px 14px;border:1.5px dashed var(--border);border-radius:var(--radius);text-align:center;font-size:12.5px;color:var(--ink-dim);cursor:pointer;transition:border-color .15s ease, background .15s ease;}
+  .dropzone:hover, .dropzone.drag{border-color:var(--accent);background:rgba(232,163,61,0.06);color:var(--ink);}
+  .dropzone input{display:none;}
+  .dropzone .plus{font-size:20px;color:var(--accent);display:block;margin-bottom:4px;font-family:var(--serif);}
+  .filelist{flex:1;overflow-y:auto;padding:4px 10px 10px;}
+  .file-row{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;}
+  .file-row:hover{background:var(--surface-2);}
+  .file-row.active{background:var(--surface-2);border-color:var(--border);}
+  .file-row .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;}
+  .file-row .fmeta{font-size:11px;color:var(--ink-faint);font-family:var(--mono);}
+  .status-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
+  .status-dot.queued{background:var(--ink-faint);}
+  .status-dot.scanning{background:var(--accent);animation:pulse 1s infinite ease-in-out;}
+  .status-dot.done{background:var(--ok);}
+  .status-dot.error{background:var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .sev-badges{display:flex;gap:4px;flex:0 0 auto;}
+  .sev-chip{width:6px;height:6px;border-radius:50%;}
+  .sev-chip.critical,.sev-chip.high{background:var(--danger);}
+  .sev-chip.medium{background:var(--warn);}
+  .sev-chip.low{background:var(--ink-faint);}
+  .rm-btn{opacity:0;background:none;border:none;color:var(--ink-faint);padding:2px 4px;font-size:14px;}
+  .file-row:hover .rm-btn{opacity:1;}
+  .rail-foot{padding:12px 16px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+  section.workspace{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;}
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink-dim);padding:40px;}
+  .empty .glyph{font-family:var(--serif);font-size:40px;color:var(--ink-faint);margin-bottom:10px;}
+  .empty h3{font-family:var(--serif);color:var(--ink);font-weight:600;margin:0 0 8px;font-size:19px;}
+  .empty p{max-width:420px;font-size:13.5px;line-height:1.6;margin:0;}
+  .ws-head{padding:16px 26px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;}
+  .ws-title{font-family:var(--mono);font-size:14px;color:var(--ink);margin-bottom:12px;}
+  .ws-title .lang{color:var(--ink-dim);margin-left:8px;font-size:12px;}
+  .tabs{display:flex;gap:2px;}
+  .tab{padding:9px 14px;font-size:13px;color:var(--ink-dim);cursor:pointer;border-bottom:2px solid transparent;font-weight:500;}
+  .tab.active{color:var(--ink);border-color:var(--accent);}
+  .tab .count{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:4px;}
+  .ws-body{flex:1;overflow-y:auto;padding:22px 26px 40px;}
+  .scanning-note{display:flex;align-items:center;gap:10px;color:var(--ink-dim);font-size:13.5px;padding:30px 0;}
+  .spinner{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .7s linear infinite;flex:0 0 auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .finding{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;background:var(--surface);}
+  .finding-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;}
+  .finding-idx{font-family:var(--mono);font-size:11px;color:var(--ink-faint);width:26px;flex:0 0 auto;}
+  .sev-tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;flex:0 0 auto;text-transform:lowercase;font-variant:small-caps;}
+  .sev-tag.critical,.sev-tag.high{background:var(--danger-dim);color:var(--danger);}
+  .sev-tag.medium{background:var(--warn-dim);color:var(--warn);}
+  .sev-tag.low{background:var(--surface-3);color:var(--ink-dim);}
+  .finding-title{flex:1;font-size:14px;font-weight:500;}
+  .finding-lines{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);flex:0 0 auto;}
+  .chev{color:var(--ink-faint);transition:transform .15s ease;flex:0 0 auto;}
+  .finding.open .chev{transform:rotate(90deg);}
+  .finding-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border);}
+  .finding.open .finding-body{display:block;padding-top:14px;}
+  .finding-body h4{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-faint);margin:14px 0 6px;font-weight:600;}
+  .finding-body h4:first-child{margin-top:0;}
+  .finding-body p{margin:0;font-size:13.5px;line-height:1.65;color:var(--ink);}
+  pre.snippet{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:12.5px;overflow-x:auto;color:var(--ink);margin:0;line-height:1.6;}
+  .verify-tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;margin-top:4px;}
+  .verify-tag.fixed{color:var(--ok);}
+  .verify-tag.unresolved{color:var(--danger);}
+  pre.codeblock{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto;white-space:pre;color:var(--ink);}
+  .diffline{display:block;padding:0 4px;}
+  .diffline.add{background:var(--add-bg);color:var(--add-fg);}
+  .diffline.del{background:var(--del-bg);color:var(--del-fg);}
+  .diffline .gutter{display:inline-block;width:1.4em;opacity:0.7;user-select:none;}
+  .summary-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;line-height:1.65;color:var(--ink);}
+  footer.status{border-top:1px solid var(--border);background:var(--surface);padding:9px 26px;font-size:11.5px;color:var(--ink-faint);font-family:var(--mono);display:flex;justify-content:space-between;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:5px;border:2px solid var(--surface);}
+  ::-webkit-scrollbar-track{background:transparent;}
+  @media (max-width:760px){
+    aside.rail{position:fixed;left:0;top:0;bottom:0;z-index:20;transform:translateX(-100%);transition:transform .2s ease;width:82%;}
+    aside.rail.open{transform:translateX(0);}
+    .ws-head{padding:14px 16px 0;} .ws-body{padding:16px 16px 40px;} header.top{padding:14px 16px;}
+  }
+  @media print{
+    aside.rail, header.top .top-actions, footer.status, .tabs, .dropzone{display:none !important;}
+    body{background:#fff;color:#111;}
+    .ws-body{overflow:visible;}
+    pre, .finding, .summary-box{break-inside:avoid;border-color:#ccc !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <button class="ghost small" id="railToggle" style="display:none;">☰</button>
+      <span class="mark">Warden — <em>secure coding</em> assistant</span>
+    </div>
+    <div class="top-actions">
+      <button class="ghost small" id="reportBtn" disabled>Save report (.md)</button>
+      <button class="ghost small" id="printBtn" disabled>Print / PDF</button>
+      <button class="primary" id="scanBtn" disabled>Scan for vulnerabilities</button>
+    </div>
+  </header>
+  <main class="layout">
+    <aside class="rail" id="rail">
+      <div class="rail-head">
+        <h2>Source files</h2>
+        <p>Add code from any language. Each file is analyzed independently, in parallel, by an LLM agent — no static rule lists.</p>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <span class="plus">+</span>
+        Drop files, or click to browse
+        <input type="file" id="fileInput" multiple>
+      </div>
+      <div class="filelist" id="fileList"></div>
+      <div class="rail-foot">
+        <button class="ghost small" id="pasteBtn">Paste a snippet instead</button>
+      </div>
+    </aside>
+    <section class="workspace" id="workspace">
+      <div class="empty" id="emptyState">
+        <div class="glyph">§</div>
+        <h3>No files loaded yet</h3>
+        <p>Upload one or more source files on the left. Warden reads each one, explains what's wrong, and rewrites it with the vulnerability closed and the behavior intact.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="status">
+    <span id="statusLeft">0 files loaded</span>
+    <span id="statusRight">Backed by an LLM via /api/analyze</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const state = { files: [], activeId: null, activeTab: "findings" };
+  const $ = (s, el=document) => el.querySelector(s);
+  const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+  function guessLang(name){
+    const ext = (name.split(".").pop()||"").toLowerCase();
+    const map = {py:"Python", php:"PHP", js:"JavaScript", ts:"TypeScript", jsx:"JavaScript (JSX)",
+      tsx:"TypeScript (TSX)", java:"Java", rb:"Ruby", go:"Go", c:"C", cpp:"C++", cs:"C#",
+      sql:"SQL", sh:"Shell", yml:"YAML", yaml:"YAML", html:"HTML"};
+    return map[ext] || "Unknown";
+  }
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  function addFiles(fileObjs){
+    fileObjs.forEach(({name, content}) => {
+      state.files.push({ id: uid(), name, content, lines: content.split("\n").length,
+        lang: guessLang(name), status: "queued", result: null, verification: null, error: null });
+    });
+    if (!state.activeId && state.files.length) state.activeId = state.files[0].id;
+    renderAll();
+  }
+  function readFileList(fileList){
+    const readers = Array.from(fileList).map(f => new Promise(res => {
+      const r = new FileReader();
+      r.onload = () => res({name: f.name, content: r.result});
+      r.onerror = () => res(null);
+      r.readAsText(f);
+    }));
+    Promise.all(readers).then(results => addFiles(results.filter(Boolean)));
+  }
+
+  function lineDiff(a, b){
+    const A = a.split("\n"), B = b.split("\n");
+    const n = A.length, m = B.length;
+    const dp = Array.from({length:n+1}, () => new Int32Array(m+1));
+    for (let i=n-1;i>=0;i--){
+      for (let j=m-1;j>=0;j--){
+        dp[i][j] = A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+      }
+    }
+    const out = [];
+    let i=0, j=0;
+    while (i<n && j<m){
+      if (A[i]===B[j]){ out.push({t:"ctx", text:A[i]}); i++; j++; }
+      else if (dp[i+1][j] >= dp[i][j+1]){ out.push({t:"del", text:A[i]}); i++; }
+      else { out.push({t:"add", text:B[j]}); j++; }
+    }
+    while (i<n){ out.push({t:"del", text:A[i]}); i++; }
+    while (j<m){ out.push({t:"add", text:B[j]}); j++; }
+    return out;
+  }
+
+  const CHUNK_LINES = 220;
+  function splitChunks(content){
+    const lines = content.split("\n");
+    if (lines.length <= CHUNK_LINES * 1.4) return [{ text: content, offset: 0 }];
+    const chunks = [];
+    for (let i=0; i<lines.length; i += CHUNK_LINES){
+      chunks.push({ text: lines.slice(i, i+CHUNK_LINES).join("\n"), offset: i });
+    }
+    return chunks;
+  }
+
+  async function callApi(payload){
+    const resp = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || ("Request failed with " + resp.status));
+    return data;
+  }
+
+  async function scanFile(file){
+    file.status = "scanning";
+    renderSidebar();
+    try {
+      const chunks = splitChunks(file.content);
+      const chunkResults = await Promise.all(chunks.map((c, idx) => callApi({
+        action: "scanChunk", name: file.name, lang: file.lang, content: c.text, offset: c.offset,
+        isChunk: chunks.length>1, totalChunks: chunks.length, chunkIdx: idx
+      })));
+      let vulnCounter = 1;
+      const vulnerabilities = [];
+      chunkResults.forEach(r => (r.vulnerabilities||[]).forEach(v => vulnerabilities.push({...v, id:"V"+(vulnCounter++)})));
+      const patched_code = chunkResults.map(r => r.patched_code||"").join("\n");
+      const fix_summary = chunkResults.map(r => r.fix_summary).filter(Boolean).join(" ");
+      file.result = { vulnerabilities, patched_code, fix_summary, chunked: chunks.length>1 };
+      file.status = "done";
+      renderAll();
+
+      if (vulnerabilities.length){
+        try {
+          file.verification = await callApi({ action:"verify", name:file.name, lang:file.lang, vulnerabilities, patchedCode: patched_code });
+        } catch(e){ file.verification = { error: e.message }; }
+      } else {
+        file.verification = { results: [], functionality_note: "No vulnerabilities were reported for this file." };
+      }
+    } catch(e){
+      file.status = "error";
+      file.error = e.message || String(e);
+    }
+    renderAll();
+  }
+
+  async function scanAll(){
+    const targets = state.files.filter(f => f.status === "queued" || f.status === "error");
+    if (!targets.length) return;
+    await Promise.all(targets.map(scanFile));
+    updateFooter();
+  }
+
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function sevCounts(file){
+    const c = {critical:0, high:0, medium:0, low:0};
+    if (file.result) file.result.vulnerabilities.forEach(v => { if (c[v.severity]!==undefined) c[v.severity]++; });
+    return c;
+  }
+
+  function renderSidebar(){
+    const list = $("#fileList");
+    list.innerHTML = state.files.map(f => {
+      const c = sevCounts(f);
+      const chips = ["critical","high","medium","low"].filter(s=>c[s]>0).map(s => `<span class="sev-chip ${s}" title="${c[s]} ${s}"></span>`).join("");
+      return `<div class="file-row ${f.id===state.activeId?'active':''}" data-id="${f.id}">
+        <span class="status-dot ${f.status}"></span>
+        <span class="fname">${escapeHtml(f.name)}</span>
+        <span class="sev-badges">${chips}</span>
+        <span class="fmeta">${f.lines}L</span>
+        <button class="rm-btn" data-rm="${f.id}" title="Remove">×</button>
+      </div>`;
+    }).join("");
+    $$(".file-row").forEach(row => row.addEventListener("click", (e) => {
+      if (e.target.closest(".rm-btn")) return;
+      state.activeId = row.dataset.id; state.activeTab = "findings"; renderAll();
+    }));
+    $$("[data-rm]").forEach(btn => btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.rm;
+      state.files = state.files.filter(f => f.id!==id);
+      if (state.activeId===id) state.activeId = state.files[0] ? state.files[0].id : null;
+      renderAll();
+    }));
+    updateFooter();
+  }
+
+  function updateFooter(){
+    const n = state.files.length;
+    const done = state.files.filter(f=>f.status==="done").length;
+    $("#statusLeft").textContent = n ? `${n} file${n>1?'s':''} loaded · ${done} scanned` : "0 files loaded";
+    const anyQueued = state.files.some(f=>f.status==="queued"||f.status==="error");
+    const anyScanning = state.files.some(f=>f.status==="scanning");
+    $("#scanBtn").disabled = !n || anyScanning || !anyQueued;
+    $("#scanBtn").textContent = anyScanning ? "Scanning…" : "Scan for vulnerabilities";
+    $("#reportBtn").disabled = done===0;
+    $("#printBtn").disabled = done===0;
+  }
+
+  function verifyForId(file, id){
+    if (!file.verification || !file.verification.results) return null;
+    return file.verification.results.find(r => r.id === id) || null;
+  }
+
+  function renderWorkspace(){
+    const ws = $("#workspace");
+    const file = state.files.find(f=>f.id===state.activeId);
+    if (!file){
+      ws.innerHTML = `<div class="empty"><div class="glyph">§</div><h3>No files loaded yet</h3><p>Upload one or more source files on the left. Warden reads each one, explains what's wrong, and rewrites it with the vulnerability closed and the behavior intact.</p></div>`;
+      return;
+    }
+    const n = file.result ? file.result.vulnerabilities.length : 0;
+    ws.innerHTML = `
+      <div class="ws-head">
+        <div><div class="ws-title">${escapeHtml(file.name)}<span class="lang">${file.lang} · ${file.lines} lines${file.result && file.result.chunked ? ' · analyzed in chunks' : ''}</span></div></div>
+        <div class="tabs">
+          <div class="tab ${state.activeTab==='findings'?'active':''}" data-tab="findings">Findings <span class="count">${n}</span></div>
+          <div class="tab ${state.activeTab==='patched'?'active':''}" data-tab="patched">Patched code</div>
+          <div class="tab ${state.activeTab==='diff'?'active':''}" data-tab="diff">Diff</div>
+          <div class="tab ${state.activeTab==='verify'?'active':''}" data-tab="verify">Verification</div>
+        </div>
+      </div>
+      <div class="ws-body" id="wsBody"></div>`;
+    $$(".tab", ws).forEach(t => t.addEventListener("click", () => { state.activeTab = t.dataset.tab; renderWorkspace(); }));
+    const body = $("#wsBody", ws);
+    if (file.status === "scanning"){ body.innerHTML = `<div class="scanning-note"><span class="spinner"></span> Reviewing ${escapeHtml(file.name)} for vulnerabilities and drafting a patch…</div>`; return; }
+    if (file.status === "error"){ body.innerHTML = `<div class="scanning-note" style="color:var(--danger)">Scan failed: ${escapeHtml(file.error||"unknown error")}. Try scanning again.</div>`; return; }
+    if (file.status === "queued"){ body.innerHTML = `<div class="scanning-note">Queued. Click "Scan for vulnerabilities" to analyze this file.</div>`; return; }
+    if (state.activeTab === "findings") renderFindings(body, file);
+    else if (state.activeTab === "patched") renderPatched(body, file);
+    else if (state.activeTab === "diff") renderDiff(body, file);
+    else if (state.activeTab === "verify") renderVerify(body, file);
+  }
+
+  function renderFindings(body, file){
+    if (!file.result.vulnerabilities.length){ body.innerHTML = `<div class="summary-box">No vulnerabilities were identified in this file.</div>`; return; }
+    body.innerHTML = file.result.vulnerabilities.map((v, idx) => {
+      const ver = verifyForId(file, v.id);
+      const verHtml = ver ? `<div class="verify-tag ${ver.fixed?'fixed':'unresolved'}">${ver.fixed?'✓ Verified fixed':'⚠ Not confirmed fixed'} — ${escapeHtml(ver.explanation||"")}</div>` : "";
+      return `<div class="finding" data-idx="${idx}">
+        <div class="finding-head">
+          <span class="finding-idx">${String(idx+1).padStart(2,'0')}</span>
+          <span class="sev-tag ${v.severity}">${escapeHtml(v.severity||'—')}</span>
+          <span class="finding-title">${escapeHtml(v.title||'Untitled finding')}${v.cwe?` <span style="color:var(--ink-faint);font-weight:400;font-family:var(--mono);font-size:12px;">(${escapeHtml(v.cwe)})</span>`:''}</span>
+          <span class="finding-lines">line ${escapeHtml(v.lines||'?')}</span>
+          <span class="chev">›</span>
+        </div>
+        <div class="finding-body">
+          <h4>Vulnerable code</h4><pre class="snippet">${escapeHtml(v.code_snippet||'')}</pre>
+          <h4>Vulnerability</h4><p>${escapeHtml(v.description||'')}</p>
+          <h4>Risk &amp; impact</h4><p>${escapeHtml(v.risk_impact||'')}</p>
+          ${verHtml ? `<h4>Verification</h4>${verHtml}` : ''}
+        </div>
+      </div>`;
+    }).join("");
+    $$(".finding-head", body).forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("open")));
+  }
+
+  function renderPatched(body, file){
+    body.innerHTML = `<div class="summary-box"><strong style="color:var(--ink);">Fix summary — </strong>${escapeHtml(file.result.fix_summary||"No summary provided.")}</div>
+      <pre class="codeblock">${escapeHtml(file.result.patched_code||"")}</pre>`;
+  }
+
+  function renderDiff(body, file){
+    const diff = lineDiff(file.content, file.result.patched_code||"");
+    const html = diff.map(d => {
+      const cls = d.t==='add' ? 'add' : d.t==='del' ? 'del' : '';
+      const marker = d.t==='add' ? '+' : d.t==='del' ? '−' : ' ';
+      return `<span class="diffline ${cls}"><span class="gutter">${marker}</span>${escapeHtml(d.text)}</span>`;
+    }).join("\n");
+    body.innerHTML = `<pre class="codeblock">${html}</pre>`;
+  }
+
+  function renderVerify(body, file){
+    if (!file.verification){ body.innerHTML = `<div class="scanning-note"><span class="spinner"></span> Verifying the patch resolves each finding…</div>`; return; }
+    if (file.verification.error){ body.innerHTML = `<div class="scanning-note" style="color:var(--danger)">Verification failed: ${escapeHtml(file.verification.error)}</div>`; return; }
+    const rows = (file.verification.results||[]).map(r => {
+      const v = (file.result.vulnerabilities||[]).find(x=>x.id===r.id);
+      return `<div class="finding">
+        <div class="finding-head" style="cursor:default;">
+          <span class="sev-tag ${r.fixed?'low':'critical'}" style="background:${r.fixed?'var(--ok-dim)':'var(--danger-dim)'};color:${r.fixed?'var(--ok)':'var(--danger)'};">${r.fixed?'resolved':'unresolved'}</span>
+          <span class="finding-title">${escapeHtml((v&&v.title)||r.id)}</span>
+        </div>
+        <div class="finding-body" style="display:block;padding-top:14px;"><p>${escapeHtml(r.explanation||"")}</p></div>
+      </div>`;
+    }).join("");
+    body.innerHTML = `<div class="summary-box"><strong style="color:var(--ink);">Functionality check — </strong>${escapeHtml(file.verification.functionality_note||"Not assessed.")}</div>
+      ${rows || '<p style="color:var(--ink-dim);font-size:13.5px;">No findings needed verification.</p>'}`;
+  }
+
+  function renderAll(){ renderSidebar(); renderWorkspace(); }
+
+  function buildMarkdownReport(){
+    const done = state.files.filter(f=>f.status==="done");
+    const now = new Date().toISOString().slice(0,19).replace("T"," ")+" UTC";
+    let md = `# Secure Coding Assistant — Vulnerability Report\n\nGenerated ${now} · ${done.length} file(s) analyzed\n\n`;
+    let totalVulns = 0;
+    done.forEach(f => totalVulns += f.result.vulnerabilities.length);
+    md += `**Total findings:** ${totalVulns}\n\n---\n\n`;
+    done.forEach(f => {
+      md += `## ${f.name}\n\n*Language: ${f.lang} · ${f.lines} lines*\n\n`;
+      if (!f.result.vulnerabilities.length){ md += `No vulnerabilities identified.\n\n`; }
+      else {
+        md += `| ID | Severity | Title | Line(s) |\n|---|---|---|---|\n`;
+        f.result.vulnerabilities.forEach(v => { md += `| ${v.id} | ${v.severity} | ${v.title} | ${v.lines} |\n`; });
+        md += `\n`;
+        f.result.vulnerabilities.forEach(v => {
+          const ver = verifyForId(f, v.id);
+          md += `### ${v.id} · ${v.title}${v.cwe?` (${v.cwe})`:''}\n\n`;
+          md += `- **Severity:** ${v.severity}\n- **Line(s):** ${v.lines}\n\n`;
+          md += `**Vulnerable code:**\n\`\`\`\n${v.code_snippet}\n\`\`\`\n\n`;
+          md += `**Vulnerability:** ${v.description}\n\n**Risk & impact:** ${v.risk_impact}\n\n`;
+          if (ver) md += `**Verification:** ${ver.fixed ? "Confirmed fixed" : "Not confirmed fixed"} — ${ver.explanation}\n\n`;
+        });
+        if (f.verification && f.verification.functionality_note) md += `**Functionality preservation check:** ${f.verification.functionality_note}\n\n`;
+        md += `**Fix summary:** ${f.result.fix_summary}\n\n`;
+        md += `<details><summary>Patched source</summary>\n\n\`\`\`\n${f.result.patched_code}\n\`\`\`\n</details>\n\n`;
+      }
+      md += `---\n\n`;
+    });
+    md += `\n*Report generated by Warden, an autonomous LLM-based secure coding agent. Findings should be reviewed by a qualified engineer before deployment.*\n`;
+    return md;
+  }
+
+  function saveReport(){
+    const md = buildMarkdownReport();
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "vulnerability-report.md";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function wire(){
+    const dz = $("#dropzone"), input = $("#fileInput");
+    dz.addEventListener("click", () => input.click());
+    input.addEventListener("change", e => readFileList(e.target.files));
+    ["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("drag"); }));
+    ["dragleave","drop"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("drag"); }));
+    dz.addEventListener("drop", e => readFileList(e.dataTransfer.files));
+    $("#pasteBtn").addEventListener("click", () => {
+      const name = prompt("Filename (with extension, e.g. login.py):", "snippet.py");
+      if (!name) return;
+      const code = prompt("Paste the source code:");
+      if (code===null) return;
+      addFiles([{name, content: code}]);
+    });
+    $("#scanBtn").addEventListener("click", scanAll);
+    $("#reportBtn").addEventListener("click", saveReport);
+    $("#printBtn").addEventListener("click", () => window.print());
+    $("#railToggle").addEventListener("click", () => $("#rail").classList.toggle("open"));
+    function checkMobile(){ $("#railToggle").style.display = window.innerWidth<=760 ? "inline-block":"none"; }
+    window.addEventListener("resize", checkMobile); checkMobile();
+  }
+
+  wire(); renderAll();
+})();
+</script>
+</body>
+</html>

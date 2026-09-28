@@ -1,0 +1,13 @@
+{
+  "name": "warden-secure-coding-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Autonomous LLM agent that scans source code for vulnerabilities, explains risk, and generates verified patches.",
+  "scripts": {
+    "eval": "node tests/evaluate.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#444"/></marker>
+  </defs>
+  <rect width="1200" height="760" fill="#FAF8F3"/>
+  <text x="40" y="48" font-size="26" font-weight="700" fill="#1a1a1a">Warden — Secure Coding Agent: Architecture</text>
+  <text x="40" y="74" font-size="14" fill="#666">All vulnerability reasoning, patching and verification is done by the LLM; the app only orchestrates.</text>
+
+  <!-- Browser -->
+  <rect x="40" y="110" width="300" height="560" rx="12" fill="#fff" stroke="#bbb"/>
+  <text x="60" y="140" font-size="17" font-weight="700">Browser (public/index.html)</text>
+  <rect x="60" y="160" width="260" height="56" rx="8" fill="#FFF3DC" stroke="#E8A33D"/><text x="75" y="184" font-size="14" font-weight="600">1. File intake</text><text x="75" y="204" font-size="12" fill="#555">drag/drop, paste; any language</text>
+  <rect x="60" y="232" width="260" height="70" rx="8" fill="#FFF3DC" stroke="#E8A33D"/><text x="75" y="256" font-size="14" font-weight="600">2. Chunker + parallel scheduler</text><text x="75" y="276" font-size="12" fill="#555">~220-line chunks; Promise.all</text><text x="75" y="292" font-size="12" fill="#555">across files and chunks</text>
+  <rect x="60" y="318" width="260" height="70" rx="8" fill="#FFF3DC" stroke="#E8A33D"/><text x="75" y="342" font-size="14" font-weight="600">3. Merge results</text><text x="75" y="362" font-size="12" fill="#555">re-number findings, join patched</text><text x="75" y="378" font-size="12" fill="#555">chunks into one file</text>
+  <rect x="60" y="404" width="260" height="84" rx="8" fill="#FFF3DC" stroke="#E8A33D"/><text x="75" y="428" font-size="14" font-weight="600">4. Presentation</text><text x="75" y="448" font-size="12" fill="#555">Findings (LOC, risk, impact)</text><text x="75" y="464" font-size="12" fill="#555">Patched code · Diff · Verification</text><text x="75" y="480" font-size="12" fill="#555">Report: Markdown / print to PDF</text>
+
+  <!-- Serverless -->
+  <rect x="440" y="110" width="330" height="560" rx="12" fill="#fff" stroke="#bbb"/>
+  <text x="460" y="140" font-size="17" font-weight="700">Serverless API (Vercel / Netlify)</text>
+  <text x="460" y="160" font-size="12" fill="#666">POST /api/analyze — holds the API key</text>
+  <rect x="460" y="176" width="290" height="70" rx="8" fill="#E6F0FA" stroke="#5B8DB8"/><text x="475" y="200" font-size="14" font-weight="600">Action router</text><text x="475" y="220" font-size="12" fill="#555">scanChunk | verify</text><text x="475" y="236" font-size="12" fill="#555">CORS, validation, error mapping</text>
+  <rect x="460" y="262" width="290" height="70" rx="8" fill="#E6F0FA" stroke="#5B8DB8"/><text x="475" y="286" font-size="14" font-weight="600">Prompt builder (lib/prompts.mjs)</text><text x="475" y="306" font-size="12" fill="#555">numbered source + JSON schema;</text><text x="475" y="322" font-size="12" fill="#555">no vulnerability rules or regexes</text>
+  <rect x="460" y="348" width="290" height="84" rx="8" fill="#E6F0FA" stroke="#5B8DB8"/><text x="475" y="372" font-size="14" font-weight="600">LLM client (lib/claude.mjs)</text><text x="475" y="392" font-size="12" fill="#555">JSON mode, fence stripping, parse</text><text x="475" y="408" font-size="12" fill="#555">model auto-discovery on 404</text><text x="475" y="424" font-size="12" fill="#555">attaches _meta (model, tokens)</text>
+  <rect x="460" y="448" width="290" height="70" rx="8" fill="#EAF5EC" stroke="#6FBF8B"/><text x="475" y="472" font-size="14" font-weight="600">Monitoring</text><text x="475" y="492" font-size="12" fill="#555">one JSON log line per call:</text><text x="475" y="508" font-size="12" fill="#555">latency, status, model, tokens</text>
+
+  <!-- LLM -->
+  <rect x="870" y="110" width="290" height="330" rx="12" fill="#fff" stroke="#bbb"/>
+  <text x="890" y="140" font-size="17" font-weight="700">LLM provider (Groq, free tier)</text>
+  <rect x="890" y="160" width="250" height="120" rx="8" fill="#F1E8F7" stroke="#8E6BB0"/><text x="905" y="184" font-size="14" font-weight="600">Pass A — Analyze + Patch</text><text x="905" y="204" font-size="12" fill="#555">finds vulnerabilities, exact lines,</text><text x="905" y="220" font-size="12" fill="#555">risk and impact; rewrites code</text><text x="905" y="236" font-size="12" fill="#555">preserving behavior</text>
+  <rect x="890" y="296" width="250" height="120" rx="8" fill="#F1E8F7" stroke="#8E6BB0"/><text x="905" y="320" font-size="14" font-weight="600">Pass B — Verify</text><text x="905" y="340" font-size="12" fill="#555">independent call: is each finding</text><text x="905" y="356" font-size="12" fill="#555">resolved by the patch? is behavior</text><text x="905" y="372" font-size="12" fill="#555">preserved?</text>
+
+  <!-- Eval -->
+  <rect x="870" y="470" width="290" height="200" rx="12" fill="#fff" stroke="#bbb"/>
+  <text x="890" y="500" font-size="17" font-weight="700">Evaluation harness</text>
+  <text x="890" y="524" font-size="12" fill="#555">tests/evaluate.mjs</text>
+  <text x="890" y="546" font-size="12" fill="#555">9 labeled files (10 planted bugs)</text>
+  <text x="890" y="564" font-size="12" fill="#555">+ 1 clean negative control</text>
+  <text x="890" y="588" font-size="12" fill="#555">→ precision / recall / F1</text>
+  <text x="890" y="606" font-size="12" fill="#555">→ patch syntax check</text>
+  <text x="890" y="624" font-size="12" fill="#555">→ latency, errors, tokens</text>
+  <text x="890" y="642" font-size="12" fill="#555">→ transcript + monitoring report</text>
+
+  <!-- arrows -->
+  <line x1="340" y1="270" x2="440" y2="270" stroke="#444" stroke-width="2" marker-end="url(#a)"/><text x="350" y="260" font-size="11" fill="#444">chunks</text>
+  <line x1="440" y1="330" x2="340" y2="330" stroke="#444" stroke-width="2" marker-end="url(#a)"/><text x="350" y="350" font-size="11" fill="#444">JSON</text>
+  <line x1="770" y1="220" x2="870" y2="220" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="770" y1="356" x2="870" y2="356" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="1015" y1="280" x2="1015" y2="296" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="870" y1="570" x2="770" y2="400" stroke="#444" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a)"/><text x="800" y="520" font-size="11" fill="#444">calls same API</text>
+
+  <!-- flow strip -->
+  <rect x="40" y="690" width="1120" height="52" rx="10" fill="#1a1a1a"/>
+  <text x="60" y="722" font-size="14" fill="#F5F0E6">Flow:  upload → chunk → analyze+patch (parallel) → merge → verify → diff/report      Data: source only; key stays server-side</text>
+</svg>

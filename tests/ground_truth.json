@@ -1,0 +1,16 @@
+{
+  "description": "Hand-labeled ground truth for the synthetic test set in tests/samples. Labels were written by the author when the sample files were created (the vulnerability was planted on purpose), not derived from model output. 09_clean_control.py is a negative control with zero planted vulnerabilities and is used to measure false positives.",
+  "labels": [
+    { "file": "01_sqli_login.py",      "cwe": "CWE-89",  "line_start": 16, "line_end": 16, "name": "SQL injection via string concatenation" },
+    { "file": "02_cmd_injection.py",   "cwe": "CWE-78",  "line_start": 10, "line_end": 10, "name": "OS command injection via os.popen" },
+    { "file": "03_upload.php",         "cwe": "CWE-434", "line_start": 6,  "line_end": 7,  "name": "Unrestricted file upload with client-controlled filename" },
+    { "file": "03_upload.php",         "cwe": "CWE-22",  "line_start": 12, "line_end": 13, "name": "Path traversal in file download" },
+    { "file": "04_xss_search.js",      "cwe": "CWE-79",  "line_start": 9,  "line_end": 9,  "name": "Reflected XSS from unescaped query parameter" },
+    { "file": "05_secrets_crypto.py",  "cwe": "CWE-798", "line_start": 4,  "line_end": 5,  "name": "Hardcoded API key and database password" },
+    { "file": "05_secrets_crypto.py",  "cwe": "CWE-328", "line_start": 9,  "line_end": 9,  "name": "MD5 used for password hashing" },
+    { "file": "06_deserialize.py",     "cwe": "CWE-502", "line_start": 11, "line_end": 11, "name": "Insecure deserialization with pickle.loads" },
+    { "file": "07_ssrf_proxy.js",      "cwe": "CWE-918", "line_start": 6,  "line_end": 7,  "name": "SSRF via user-controlled URL fetch" },
+    { "file": "08_eval_calc.js",       "cwe": "CWE-95",  "line_start": 6,  "line_end": 6,  "name": "Code injection via eval of user input" }
+  ],
+  "clean_files": ["09_clean_control.py"]
+}
